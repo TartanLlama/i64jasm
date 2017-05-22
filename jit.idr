@@ -1,6 +1,8 @@
 module Main
 
 import Buffer
+import X86
+import Control.Monad.State
 
 copyToBuffer : Buffer -> List Bits8 -> IO Buffer
 copyToBuffer buf xs =
@@ -33,17 +35,17 @@ toByteList i =
     getByte : Int -> Int -> Int
     getByte i n = prim__zextB8_Int $ prim__truncInt_B8 $ prim__lshrInt i (n*8)
 
-helloBytes : Int -> List Bits8
+bytes : List Int -> List Bits8
+bytes l = map prim__truncInt_B8 l
+
+{-helloBytes : Int -> X86 ()
 helloBytes addr =
-   map prim__truncInt_B8 chars
-  where
-    chars : List Int
-    chars = [0xb8, 0x04, 0x00, 0x00, 0x00]
-              ++ [0xbb, 0x01, 0x00, 0x00, 0x00]
-              ++ (0xb9 :: toByteList addr)
-              ++ [0xba, 0x0e, 0x00, 0x00, 0x00]
-              ++ [0xcd, 0x80]
-              ++ [0xc3]
+  do emit.bytes [0xb8, 0x04, 0x00, 0x00, 0x00]
+     emit.bytes [0xbb, 0x01, 0x00, 0x00, 0x00]
+     emit.bytes (0xb9 :: toByteList addr)
+     emit.bytes [0xba, 0x0e, 0x00, 0x00, 0x00]
+     emit.bytes [0xcd, 0x80]
+     emit.bytes [0xc3]-}
 
 
 {-helloWorld : Int -> IO (Maybe Buffer)
@@ -101,12 +103,17 @@ asciz str = do
 toInt : Ptr -> IO Int
 toInt p = foreign FFI_C "ptr_to_int" (Ptr -> IO Int) p
 
+testRet : X86 ()
+testRet = do ret
+             ret
+             ret
+
 main : IO ()
 main = do
   textPtr <- asciz "Hello, world!"
   textPtr' <- toInt textPtr
   buf <- allocJitBuffer 128
-  codeBuf <- toBuffer $ helloBytes textPtr'
+  codeBuf <- toBuffer $ bin $ getJIT testRet--helloBytes textPtr'
   case codeBuf of
     Just codeBuf =>
       do
