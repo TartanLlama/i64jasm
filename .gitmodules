@@ -1,0 +1,3 @@
+[submodule "ext/opcodes"]
+	path = ext/opcodes
+	url = https://github.com/Maratyszcza/Opcodes.git
